@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Display a globe with a vector map</title>
+    <meta property="og:description" content="Display a globe with a vector map." />
+    <meta charset='utf-8'>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel='stylesheet' href='https://unpkg.com/maplibre-gl@5.17.0/dist/maplibre-gl.css' />
+    <script src='https://unpkg.com/maplibre-gl@5.17.0/dist/maplibre-gl.js'></script>
+     <script src="https://unpkg.com/scrollama"></script>
+
+    <style>
+    html, body { height: 100%; margin: 0; padding: 0; }
+    .maplibregl-popup-content {
+      background: rgba(255, 255, 255, 1);
+      border-radius: 8px;
+      padding: 10px;
+      text-align: center;
+      font-family: Arial, sans-serif;
+      font-size: 12px;
+    }
+
+    .popup-ha {
+      color: #d62828;
+      font-weight: bold;
+      font-size: 15px;
+      display: block;
+      margin-top: 5px;
+    }
+
+     body {
+      margin: 0;
+      font-family: sans-serif;
+    }
+
+    #map {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 0;
+    }
+   
+    #story {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+    }
+
+    .step {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .step-content {
+      padding: 30px;
+      max-width: 400px;
+      border-radius: 6px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+      color: white;
+    }
+
+
+  </style>
+</head>
+
+<body>
+<div id="map"></div>
+
+<div id="story">
+  <div class="step" id="step-1">
+    <div class="step-content">
+      <h3>Paso 1</h3>
+      <p>Este es el punto de partida de nuestra historia.</p>
+    </div>
+  </div>
+
+  <div class="step" id="step-2">
+    <div class="step-content">
+      <h3>Paso 2</h3>
+      <p>Nos desplazamos al segundo lugar clave.</p>
+    </div>
+  </div>
+
+  <div class="step" id="step-3">
+    <div class="step-content">
+      <h3>Paso 3</h3>
+      <p>Aquí ocurre algo importante.</p>
+    </div>
+  </div>
+
+  <div class="step" id="step-4">
+    <div class="step-content">
+      <h3>Paso 4</h3>
+      <p>La historia se complica en este punto.</p>
+    </div>
+  </div>
+
+  <div class="step" id="step-5">
+    <div class="step-content">
+      <h3>Paso 5</h3>
+      <p>Terminamos el recorrido aquí.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+    const map = new maplibregl.Map({
+        container: 'map',
+        zoom: 5.5,
+        center: [-3, 40],
+        style: {
+            "version": 8,
+            "sources": {
+                "satellite": {
+                    "type": "raster",
+                    "tiles": [
+                        "https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2020_3857/default/g/{z}/{y}/{x}.jpg"
+                    ],
+                    "tileSize": 256
+                }
+            },
+            "layers": [{
+                "id": "satellite",
+                "type": "raster",
+                "source": "satellite"
+            }]
+        }
+    });
+
+    //Fecha conversión (antes del on load)
+  function fechaLarga(fechaStr) {
+    if (!fechaStr) return "Sin fecha";
+
+    const meses = [
+      "enero", "febrero", "marzo", "abril", "mayo", "junio",
+      "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"
+    ];
+
+    const d = new Date(fechaStr);
+    if (isNaN(d)) return fechaStr;
+
+    return `${d.getDate()} de ${meses[d.getMonth()]} de ${d.getFullYear()}`;
+  }
+
+
+    map.on('load', () => {
+    map.setProjection({ type: 'globe' });
+
+
+    map.addSource('countries', {
+        type: 'geojson',
+        data: 'https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson'
+    });
+
+    map.addLayer({
+        id: 'country-borders',
+        type: 'line',
+        source: 'countries',
+        paint: {
+            'line-color': 'rgba(255, 255, 255, 0.5)',
+            'line-width': 0.7
+        }
+    });
+
+    //Cargar provincias
+
+ map.addSource('provincias', {
+        type: 'geojson',
+        data: 'data/provincias2.geojson'
+    });
+
+    map.addLayer({
+        id: 'limites-provincias',
+        type: 'line',
+        source: 'provincias',
+        paint: {
+            'line-color': 'rgba(255, 255, 255, 0.5)',
+            'line-width': 0.3
+        }
+    });
+
+    //incendios
+
+     map.addSource('incendios', {
+        type: 'geojson',
+        data: 'data/incendios2.geojson'
+    });
+
+     map.addLayer({
+            'id': 'incendios',
+            'type': 'fill',
+            'source': 'incendios',
+            'layout': {},
+            'paint': {
+                'fill-color': '#FA3939',
+                'fill-opacity': 0.8
+            }
+     });
+
+    // Outline layer
+    map.addLayer({
+      id: 'incendios-outline',
+      type: 'line',
+      source: 'incendios',
+      paint: {
+        'line-color': '#FF8C00',
+        'line-width': 0.7
+      }
+    });
+
+
+     // Popup (dentro del onload)
+    const popup = new maplibregl.Popup({
+      closeButton: false,
+      closeOnClick: false
+    });
+
+    // Show popup at cursor while hovering
+    map.on('mousemove', 'incendios', (e) => {
+    if (!e || !e.features || e.features.length === 0) {
+        popup.remove();
+        return;
+    }
+
+    map.getCanvas().style.cursor = 'pointer';
+    const feature = e.features[0];
+    const props = feature.properties || {};
+
+    // Read attributes
+    const fechaRaw = props.initialdate || props.fecha || "";
+    const fechaFormateada = fechaLarga(fechaRaw);
+
+    const municipio = props.admlvl5 || props.municipio || "Desconocido";
+    const ha = props.area_ha || props.ha || props.area || "N/A";
+
+    popup
+        .setLngLat(e.lngLat)
+        .setHTML(`
+        <strong>${municipio}</strong><br>
+        <span>${fechaFormateada}</span><br>
+        <span class="popup-ha">${ha} ha</span>
+        `)
+        .addTo(map);
+    });
+
+    // Remove popup when leaving
+    map.on('mouseleave', 'incendios', () => {
+      map.getCanvas().style.cursor = '';
+      popup.remove();
+    });
+  });
+
+  
+
+  //Coordenadas de cada paso
+  const steps = {
+    'step-1': {
+      center: [-3.7038, 40.4168],
+      zoom: 6
+    },
+    'step-2': {
+      center: [-3.1734, 43.3851],
+      zoom: 7
+    },
+    'step-3': {
+      center: [-0.3763, 39.4699],
+      zoom: 7
+    },
+    'step-4': {
+      center: [-5.9845, 37.3891],
+      zoom: 7
+    },
+    'step-5': {
+      center: [-8.4040, 43.3623],
+      zoom: 7
+    }
+  };
+
+  
+  
+  // Scrollama
+  const scroller = scrollama();
+
+  scroller
+    .setup({
+      step: '.step',
+      offset: 0.5
+    })
+    .onStepEnter(response => {
+      const stepId = response.element.id;
+      const config = steps[stepId];
+
+      map.flyTo({
+        center: config.center,
+        zoom: config.zoom,
+        speed: 0.8,
+        essential: true
+      });
+    });
+
+  window.addEventListener('resize', scroller.resize);
+
+
+
+</script>
+</body>
+
+</html>

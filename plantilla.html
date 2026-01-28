@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Scrollytelling centrado con MapLibre</title>
+
+  <link
+    href="https://unpkg.com/maplibre-gl@3.5.2/dist/maplibre-gl.css"
+    rel="stylesheet"/>
+  <script src="https://unpkg.com/maplibre-gl@3.5.2/dist/maplibre-gl.js"></script>
+<script src="https://unpkg.com/scrollama"></script>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: sans-serif;
+    }
+
+    #map {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 0;
+    }
+   
+    #story {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+    }
+
+    .step {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .step-content {
+      background: rgba(255, 255, 255, 0.9);
+      padding: 30px;
+      max-width: 400px;
+      border-radius: 6px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    }
+  </style>
+</head>
+
+<body>
+
+<div id="map"></div>
+
+<div id="story">
+  <div class="step" id="step-1">
+    <div class="step-content">
+      <h3>Paso 1</h3>
+      <p>Este es el punto de partida de nuestra historia.</p>
+    </div>
+  </div>
+
+  <div class="step" id="step-2">
+    <div class="step-content">
+      <h3>Paso 2</h3>
+      <p>Nos desplazamos al segundo lugar clave.</p>
+    </div>
+  </div>
+
+  <div class="step" id="step-3">
+    <div class="step-content">
+      <h3>Paso 3</h3>
+      <p>Aquí ocurre algo importante.</p>
+    </div>
+  </div>
+
+  <div class="step" id="step-4">
+    <div class="step-content">
+      <h3>Paso 4</h3>
+      <p>La historia se complica en este punto.</p>
+    </div>
+  </div>
+
+  <div class="step" id="step-5">
+    <div class="step-content">
+      <h3>Paso 5</h3>
+      <p>Terminamos el recorrido aquí.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+
+  const map = new maplibregl.Map({
+    container: 'map',
+    style: 'https://demotiles.maplibre.org/style.json',
+    center: [-3.7038, 40.4168],
+    zoom: 5
+  });
+
+  //Coordenadas de cada paso
+  const steps = {
+    'step-1': {
+      center: [-3.7038, 40.4168],
+      zoom: 6
+    },
+    'step-2': {
+      center: [2.1734, 41.3851],
+      zoom: 7
+    },
+    'step-3': {
+      center: [-0.3763, 39.4699],
+      zoom: 7
+    },
+    'step-4': {
+      center: [-5.9845, 37.3891],
+      zoom: 7
+    },
+    'step-5': {
+      center: [-8.4040, 43.3623],
+      zoom: 7
+    }
+  };
+
+  // Scrollama
+  const scroller = scrollama();
+
+  scroller
+    .setup({
+      step: '.step',
+      offset: 0.5
+    })
+    .onStepEnter(response => {
+      const stepId = response.element.id;
+      const config = steps[stepId];
+
+      map.flyTo({
+        center: config.center,
+        zoom: config.zoom,
+        speed: 0.8,
+        essential: true
+      });
+    });
+
+  window.addEventListener('resize', scroller.resize);
+</script>
+
+</body>
+</html>
